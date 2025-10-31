@@ -6,6 +6,7 @@ import pathlib
 
 LION_DATA_PATH = pathlib.Path("/store/LION/datasets/")
 LUNA_DATASET_PATH = LION_DATA_PATH.joinpath("raw/LUNA16")
+LUNA25_DATASET_PATH = LION_DATA_PATH.joinpath("raw/LUNA25")
 WALNUT_DATASET_PATH = LION_DATA_PATH.joinpath("raw/walnuts")
 LIDC_IDRI_PATH = LION_DATA_PATH.joinpath("raw/LIDC-IDRI")
 DETECT_PATH = LION_DATA_PATH.joinpath("raw/2detect")
