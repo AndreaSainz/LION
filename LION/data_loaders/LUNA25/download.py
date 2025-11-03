@@ -129,3 +129,7 @@ if EXTRACT_AFTER_DOWNLOAD:
             print(f"[EXTRACT] Skip: {first_part_name} not found (maybe not downloaded)")
 
 print("\nAll tasks finished.")
+
+
+
+###### I STILL NEED TO RUN EVERYTHING FROM SCRATCH CAUSE I RUN IT IN PARTS #######
