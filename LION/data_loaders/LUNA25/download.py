@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # create a Zenodo Token to access the data and then run in the terminal: export ZENODO_TOKEN='your_token' 
 TOKEN = os.getenv("ZENODO_TOKEN")
 record_id = "14223624"
-outdir = pathlib.Path("/store/LION/as3628/datasets/raw/LUNA25") # Change to LUNA25_DATASET_PATH in the future, I don't have permission
+outdir = pathlib.Path("/store/LION/as3628/datasets/LUNA25/raw") # Change to LUNA25_DATASET_PATH in the future, I don't have permission
 outdir.mkdir(parents=True, exist_ok=True)
 max_workers = 12
 
