@@ -13,5 +13,6 @@ DETECT_PATH = LION_DATA_PATH.joinpath("raw/2detect")
 
 ## Data ready for training use
 LUNA_PROCESSED_DATASET_PATH = LION_DATA_PATH.joinpath("processed/LUNA16")
+LUNA25_PROCESSED_DATASET_PATH = pathlib.Path("/store/LION/as3628/datasets/LUNA25/processed")
 LIDC_IDRI_PROCESSED_DATASET_PATH = LION_DATA_PATH.joinpath("processed/LIDC-IDRI")
 DETECT_PROCESSED_DATASET_PATH = LION_DATA_PATH.joinpath("processed/2detect")
