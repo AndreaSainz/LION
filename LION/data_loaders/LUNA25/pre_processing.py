@@ -64,8 +64,8 @@ max_workers = 20
 
 
 # PATHS
-data_path = "/store/LION/as3628/datasets/LUNA25/raw/"
-save_path = "/store/LION/as3628/datasets/LUNA25/preprocessed/"
+data_path = "/store/LION/as3628/nosnap/LUNA25/raw/"
+save_path = "/store/LION/as3628/nosnap/LUNA25/preprocessed/"
 
 img_path = os.path.join(data_path, "luna25_images/")
 save_img_path = os.path.join(save_path, "luna25_images/")
@@ -302,6 +302,7 @@ def process_one_patient(patient_df: pd.DataFrame):
                     "nlst_PatientID": pid,
                     "SeriesInstanceUID": series_uid,
                     "ct_npy_path": ct_npy_path,
+                    "ct_mha_path":ct_mha_path,
                     "dims": dims,
                     "spacing": spacing,
                     "offset": origin,

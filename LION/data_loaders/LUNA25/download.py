@@ -48,11 +48,7 @@ Set the following flags at the top of the script:
         - If False, skips all annotation files.
 
     EXTRACT_CT = True / False
-        - If True, automatically extracts the CT multi-part archives using 7-Zip.
-        - Ignored if DOWNLOAD_CT=False.
-
-    CLEAN_ZIPS_AFTER_EXTRACT = True / False
-        - If True, deletes the downloaded .zip.001/.002/... parts after extraction.
+        - If True, automatically extracts the CT multi-part archives using 7-Zip and delete the files on the go.
 
 --------------------------------------------------------------------------------
 DEPENDENCIES
@@ -95,7 +91,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 DOWNLOAD_CT = True
 DOWNLOAD_ANNOTATIONS = True
 EXTRACT_CT = True
-CLEAN_ZIPS_AFTER_EXTRACT = True
+
 
 # === CONFIG ===
 # create a Zenodo Token to access the data and then run in the terminal: export ZENODO_TOKEN='your_token' 
@@ -105,7 +101,7 @@ IMAGING_RECORD_ID = "14223624"
 # Annotation data (CSV, etc.)
 ANNOT_RECORD_ID = "14673658"
 
-outdir = pathlib.Path("/store/LION/as3628/datasets/LUNA25/raw") # Change to LUNA25_DATASET_PATH in the future, I don't have permission
+outdir = pathlib.Path("/store/LION/as3628/nosnap/LUNA25/raw") # Change to LUNA25_DATASET_PATH in the future, I don't have permission
 outdir.mkdir(parents=True, exist_ok=True)
 max_workers = 20
 
@@ -239,15 +235,24 @@ def delete_zip_parts(prefix: str):
     print(f"[CLEAN] Removed {count} zip part(s) matching '{prefix}.zip*'")
 
 # === MAIN EXTRACTION LOOP ===
-if EXTRACT_CT and DOWNLOAD_CT:
+# Deletion ALWAYS happens after extraction succeeds
+if EXTRACT_CT:
     for first_part_name in extract_targets:
         first_part_path = outdir / first_part_name
-        if first_part_path.exists():
-            ok = extract_split_archive(first_part_path)
-            if ok and CLEAN_ZIPS_AFTER_EXTRACT:
-                prefix = first_part_name.split(".zip.001")[0]
-                delete_zip_parts(prefix)
-        else:
+
+        if not first_part_path.exists():
             print(f"[EXTRACT] Skip: {first_part_name} not found (maybe not downloaded)")
+            continue
+
+        # Extract the multi-part zip
+        ok = extract_split_archive(first_part_path)
+
+        # Always remove all zip parts after successful extraction
+        prefix = first_part_name.split(".zip.001")[0]
+        if ok:
+            delete_zip_parts(prefix)
+        else:
+            print(f"[EXTRACT] Warning: extraction may be incomplete for {first_part_name}")
+            print(f"[EXTRACT] Zip parts NOT deleted for safety.")
 
 print("\nAll tasks finished.")
