@@ -1,7 +1,7 @@
 *.png
 *.pyc
 *.egg
-
+*.log
 
 nohup.out
 **/__pycache__
