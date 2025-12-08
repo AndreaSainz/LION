@@ -126,7 +126,6 @@ class Geometry(LIONParameter):
         )
 
     staticmethod
-
     def parallel_sparse_angle_parameters(image_shape=None):
         if image_shape is None:
             image_shape = [1, 512, 512]

@@ -12,9 +12,11 @@ import pandas as pd
 import torch
 import numpy as np
 from torch.utils.data import Dataset
+from LION.utils.parameter import LIONParameter
+from LION.CTtools.ct_geometry import Geometry
 import warnings
 from LION.utils.paths import LUNA25_PROCESSED_DATASET_PATH
-from LION.utils.parameter import LIONParameter
+
 import LION.CTtools.ct_geometry as ctgeo
 import LION.CTtools.ct_utils as ct
 from LION.CTtools.ct_utils import make_operator
@@ -115,20 +117,17 @@ class LUNA25(Dataset):
             raise ValueError(
                 "For reconstruction task geometry needs to be input to default_parameters(geometry=geometry_param)"
             )
-        +
+        
 
 
-
-
-
-        self.pixels = 362               # Image resolution of 362x362 pixels on a domain size of 26x26 cm
-        self.num_angles = 1000
-        self.num_detectors = 513        # 513 equidistant detector bins s spanning the image diameter.
-        self.src_orig_dist = 575
-        self.src_det_dist = 1050
-        self.slices_per_file = 128
-        self.n_single_BP = int(n_single_BP)
-        self.view_angles = int(view_angles)
-        self.single_bp = single_bp
-        self.sparse_view = sparse_view
-        self.alpha = alpha
+    @staticmethod
+    def LUNA25_geometry():
+        return Geometry(
+                image_shape=[1, 512, 512],
+                image_size=[1, 0.7, 0.7],
+                detector_shape=[1, 900],
+                detector_size=[1, 900],
+                dso=575,
+                dsd=1050,
+                mode="fan",
+                angles=np.linspace(0, 2 * np.pi, 360, endpoint=False))
