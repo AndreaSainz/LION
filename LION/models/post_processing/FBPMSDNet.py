@@ -1,7 +1,9 @@
-from LION.CTtools.ct_geometry import Geometry
+from __future__ import annotations
+
 from LION.classical_algorithms.fdk import fdk
-from LION.models.CNNs.MSDNet import MSD_Params, MSDNet
-from LION.models.LIONmodel import LIONmodel, LIONModelParameter
+from LION.CTtools.ct_geometry import Geometry
+from LION.models.CNNs.MSDNet import MSDNet
+from LION.models.LIONmodel import LIONmodel
 
 
 class FBPMSDNet(LIONmodel):

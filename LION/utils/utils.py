@@ -1,21 +1,46 @@
+import argparse
 import json
-import numpy as np
 import subprocess
 from pathlib import Path
-from typing import Dict
-import pathlib
-import argparse
+
+import numpy as np
+import torch
+
 
 ## JSON numpy encoder
-class NumpyEncoder(json.JSONEncoder):
+class JSONParamEncoder(json.JSONEncoder):
     def default(self, obj):
+        """Default converter for JSON serialization.
+
+        Handles common non-JSON types used in LION and converts them to
+        JSON-serialisable Python types.
+        """
+        # Handle pathlib.Path
+        if isinstance(obj, Path):
+            return str(obj)
+
+        # Handle torch.Tensor
+        if isinstance(obj, torch.Tensor):
+            # Scalar tensor -> Python number
+            if obj.dim() == 0:
+                return obj.item()
+            # Non-scalar tensor -> nested lists
+            return obj.detach().cpu().tolist()
+
+        # Handle NumPy scalar types
+        if isinstance(obj, np.generic):
+            return obj.item()
+
+        # Handle NumPy arrays
         if isinstance(obj, np.ndarray):
             return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
+
+        # Fallback to the standard behaviour (will raise TypeError if unknown)
+        return super().default(obj)
 
 
 def get_git_revision_hash() -> str:
-    "Gets git commit hash"
+    """Gets git commit hash"""
     return subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
 
 

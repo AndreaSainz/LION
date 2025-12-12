@@ -4,14 +4,16 @@
 # Author  : Zakhar Shumaylow, Charlie Shoebridge
 # Modifications: Ander Biguri
 # =============================================================================
+from __future__ import annotations
 
 import numpy as np
 import torch
+from tomosipo.torch_support import to_autograd
 from torch.optim.optimizer import Optimizer
 from tqdm import tqdm
-from LION.CTtools.ct_geometry import Geometry
+
 from LION.classical_algorithms.fdk import fdk
-from tomosipo.torch_support import to_autograd
+from LION.CTtools.ct_geometry import Geometry
 from LION.exceptions.exceptions import LIONSolverException
 from LION.models.LIONmodel import LIONmodel, ModelInputType
 from LION.optimizers.LIONsolver import LIONsolver, SolverParams

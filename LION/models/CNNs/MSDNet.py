@@ -8,14 +8,15 @@
 # Implementation of Mixed-Scale Dense Network described in:
 # Daniël M. Pelt and James A. Sethian
 # A mixed-scale dense convolutional neural network for image analysis
+from __future__ import annotations
+
+from typing import Optional
 
 import numpy as np
-import torch.nn as nn
 import torch
-from typing import Optional
-from LION.models.LIONmodel import LIONmodel, LIONModelParameter, ModelInputType
-from LION.models.LIONmodel import LIONModelParameter
-import warnings
+import torch.nn as nn
+
+from LION.models.LIONmodel import LIONmodel, LIONModelParameter
 
 
 class MSD_Layer(nn.Module):
@@ -166,7 +167,7 @@ class MSDNet(LIONmodel):
     def _initialize_conv_weights(self, layer: nn.Module):
         assert isinstance(layer, nn.Conv2d), "layer not Conv2D"
         n_c = (
-            np.product(layer.weight.shape[2:])
+            np.prod(layer.weight.shape[2:])
             * (
                 self.model_parameters.in_channels
                 + self.model_parameters.width * (self.model_parameters.depth - 1)
@@ -195,9 +196,11 @@ class MSDNet(LIONmodel):
         for i, layer in enumerate(range(self.model_parameters.depth)):
             x = self.layers[layer](x)[
                 :,
-                -self.model_parameters.look_back_depth * self.model_parameters.width
-                if self.model_parameters.look_back_depth != -1
-                else 0 :,
+                (
+                    -self.model_parameters.look_back_depth * self.model_parameters.width
+                    if self.model_parameters.look_back_depth != -1
+                    else 0
+                ) :,
             ]
             # x now contains all layers to pass forward aswell as newly calculated one
             if (

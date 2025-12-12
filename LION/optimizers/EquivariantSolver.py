@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import random
 from typing import Callable
+
 import torch
 import torchvision.transforms.functional as TF
-from torch.optim.optimizer import Optimizer
 from tomosipo.torch_support import to_autograd
-from LION.CTtools.ct_geometry import Geometry
+from torch.optim.optimizer import Optimizer
+
 from LION.classical_algorithms.fdk import fdk
+from LION.CTtools.ct_geometry import Geometry
 from LION.models.LIONmodel import LIONmodel, ModelInputType
 from LION.optimizers.LIONsolver import LIONsolver, SolverParams
 from LION.utils.parameter import LIONParameter
@@ -80,7 +84,7 @@ class EquivariantSolver(LIONsolver):
             print("Chen, Dongdong, Julián Tachella, and Mike E. Davies.")
             print('"Equivariant imaging: Learning beyond the range space."')
             print(
-                "\x1B[3m Proceedings of the IEEE/CVF International Conference on Computer Vision. \x1B[0m"
+                "\x1b[3m Proceedings of the IEEE/CVF International Conference on Computer Vision. \x1b[0m"
             )
             print("2021")
         elif cite_format == "bib":

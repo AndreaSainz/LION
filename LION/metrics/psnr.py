@@ -1,6 +1,8 @@
-from skimage.metrics import peak_signal_noise_ratio as skim_psnr
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
+from skimage.metrics import peak_signal_noise_ratio as skim_psnr
 
 from LION.exceptions.exceptions import ShapeMismatchException
 
@@ -16,7 +18,7 @@ class PSNR(nn.Module):
             x: torch.Tensor: input image
             target: torch.Tensor: target image to compare x against
             batched: whether x and target are batched or not
-            reduce: if batched=False has no effect. Otherwise specifies what operation should be done to aggregate SSIMs along the batch axis. 
+            reduce: if batched=False has no effect. Otherwise specifies what operation should be done to aggregate SSIMs along the batch axis.
                 Defaults to None, in which case a tensor of shape (batch size) is returned
 
     """
@@ -31,7 +33,7 @@ class PSNR(nn.Module):
         x_ = x.detach().cpu().numpy().squeeze()
         target_ = target.detach().cpu().numpy().squeeze()
         if batched:
-            vals = torch.empty((x.shape[0]))
+            vals = torch.empty(x.shape[0])
             for i in range(x.shape[0]):
                 vals[i] = skim_psnr(
                     target_[i], x_[i], data_range=target_[i].max() - target_[i].min()

@@ -1,9 +1,9 @@
 ## This file contains a general class to store LIONParameter files.
 ## You should inherit from this class for any LIONParameter setting.
 import json
-
-from LION.utils.utils import NumpyEncoder
 from pathlib import Path
+
+from LION.utils.utils import JSONParamEncoder
 
 
 class LIONParameter:
@@ -42,7 +42,6 @@ class LIONParameter:
         """
         Produces a dict of LIONParameter()
         """
-        pass
 
     def save(self, fname):
         """
@@ -54,7 +53,7 @@ class LIONParameter:
             fname.joinpath(".json")
         with open(fname, "w", encoding="utf-8") as f:
             json.dump(
-                self.serialize(), f, ensure_ascii=False, indent=4, cls=NumpyEncoder
+                self.serialize(), f, ensure_ascii=False, indent=4, cls=JSONParamEncoder
             )
 
     def load(self, fname):
@@ -63,7 +62,7 @@ class LIONParameter:
         """
         if isinstance(fname, str):
             fname = Path(fname)
-        with open(fname, "r", encoding="utf-8") as f:
+        with open(fname, encoding="utf-8") as f:
             d = json.load(f)
         self.__init__(**d)
 

@@ -1,21 +1,50 @@
+"""Utility math functions."""
+
+from __future__ import annotations
+
 import numpy as np
 import torch
 
+from LION.operators.Operator import Operator
 
-def power_method(op, maxiter=100, tol=1e-6):
-    arr_old = np.random.rand(*op.domain_shape).astype(np.float32)
+
+def power_method(
+    op: Operator,
+    maxiter: int = 100,
+    tol: float = 1e-6,
+    device: torch.device | str | None = None,
+) -> torch.Tensor:
+    """Estimate operator norm by power iteration using torch.
+
+    Parameters
+    ----------
+    op : Operator
+        The operator for which to estimate the norm.
+    maxiter : int
+        Number of power iterations.
+    tol : float
+        Absolute tolerance for convergence. (TODO: consider adding relative tolerance?)
+    device : torch.device | str | None
+        Device for computations. If None, use operator's device.
+
+    Returns
+    -------
+    sigma : torch.Tensor
+        Estimated operator norm.
+    """
+    arr_old = torch.randn(*op.domain_shape, device=device)
     error = tol + 1
     i = 0
     while error >= tol:
 
         # very verbose and inefficient for now
         omega = op(arr_old)
-        alpha = np.linalg.norm(omega)
+        alpha = torch.linalg.norm(omega)
         u = (1.0 / alpha) * omega
-        z = op.T(u)
-        beta = np.linalg.norm(z)
+        z = op.adjoint(u)
+        beta = torch.linalg.norm(z)
         arr = (1.0 / beta) * z
-        error = np.linalg.norm(op(arr) - beta * u)
+        error = torch.linalg.norm(op(arr) - beta * u)
         sigma = beta
         arr_old = arr
         i += 1
