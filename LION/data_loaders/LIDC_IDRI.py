@@ -82,6 +82,14 @@ class LIDC_IDRI(Dataset):
                           "segmentation"    -> (image, segmentation_label)
                           "reconstruction"  -> (sinogram, image_label)
                           "diagnostic"      -> (segmented_nodule, diagnostic_label)
+                          "full"            -> (sinogram, segmentation_label, image_label, diagnostic_label)
+                      Returns the simulated sinogram, the segmentation mask,
+                      the ground truth CT image and the patient diagnosis.
+                      The diagnosis label is associated with the patient, so
+                      it is repeated for every selected slice of that patient.
+                      For example, if N slices are selected from one patient,
+                      the dataset will contain N samples with the same
+                      diagnostic label.
                           "joint"           -> ?????
                           "end_to_end"      -> ?????
             - training_proportion (float): Defines training % of total data.
@@ -89,7 +97,9 @@ class LIDC_IDRI(Dataset):
             - Task (str): Defines what task is the Dataset being used for. "segmentation" (default) returns (gt_image,segmentation) pairs while "reconstruction" returns (sinogram, gt_image) pairs
             - annotation (str): Defines what annotation mode to use. Distinguish between "random" and "consensus". Default "consensus"
             - max_num_slices_per_patient (int): Defines the maximum number of slices to take per patient. Default is -1, which takes all slices we have of each patient and pcg_slices_nodule gets ignored.
-            - pcg_slices_nodule (float): Defines percentage of slices with nodule in dataset. 0 meaning "no nodules at all" and 1 meaning "just take slices that contain annotated nodules". Only used if max_num_slices_per_patient != -1. Default is 0.5.
+            - pcg_slices_nodule (float): Defines percentage of slices with nodule in dataset. 0 meaning "no nodules at all" and 1 meaning "just take slices that contain annotated nodules". Only used if max_num_slices_per_patient != -1.
+            - load_only_slices_with_nodules (bool): If True, only loads slices containing annotated nodules.
+            Ignors pcg_slices_nodule and loads all available nodule slices. Default is 0.5.
             - clevel (float): Defines consensus level if annotation=consensus. Value between 0-1. Default is 0.5.
             - geometry: Geometry() type, if sinograms are requied (e.g. fo "reconstruction")
 
@@ -113,13 +123,14 @@ class LIDC_IDRI(Dataset):
             "segmentation",
             "reconstruction",
             "diagnostic",
+            "full",
         ], f'task argument {task} not in ["joint", "end_to_end", "segmentation", "reconstruction", "diagnostic"]'
 
-        if task not in ["segmentation", "reconstruction", "end_to_end"]:
+        if task not in ["segmentation", "reconstruction", "end_to_end", "full"]:
             raise NotImplementedError(f"task {task} not implemented yet")
 
         if (
-            task in ["reconstruction"]
+            task in ["reconstruction", "full"]
             and geometry_parameters is None
             and self.params.geometry is None
         ):
@@ -128,11 +139,13 @@ class LIDC_IDRI(Dataset):
         # Aux variable setting
         self.sinogram_transform = None
         self.image_transform = None
+        self.image_mu_transform = None
         self.device = self.params.device
 
-        if task in ["reconstruction"]:
-            self.image_transform = ct.from_HU_to_mu
-        if task in ["segmentation"]:
+        if task in ["reconstruction", "full"]:
+            self.image_mu_transform = ct.from_HU_to_mu
+
+        if task in ["segmentation", "full"]:
             self.image_transform = ct.from_HU_to_normal
 
         if geometry_parameters is not None:
@@ -159,6 +172,7 @@ class LIDC_IDRI(Dataset):
         )
         self.num_slices_per_patient = self.params.max_num_slices_per_patient
         self.pcg_slices_nodule = self.params.pcg_slices_nodule
+        self.load_only_slices_with_nodules = self.params.load_only_slices_with_nodules
         self.annotation = self.params.annotation
         self.clevel = (
             self.params.clevel
@@ -254,12 +268,55 @@ class LIDC_IDRI(Dataset):
         self.validation_proportion = self.params.validation_proportion
         self.params.mode = mode
         # Commpute number if images for each
+        # self.n_patients_training = math.floor(
+        #     self.training_proportion * (self.total_patients)
+        # )
+        # self.n_patients_validation = math.floor(
+        #     self.validation_proportion * (self.total_patients)
+        # )
+        # self.n_patients_testing = (
+        #     self.total_patients - self.n_patients_training - self.n_patients_validation
+        # )
+
+        # assert self.total_patients == (
+        #     self.n_patients_training
+        #     + self.n_patients_testing
+        #     + self.n_patients_validation
+        # ), print(
+        #     f"Total patients: {self.total_patients}, \n training patients {self.n_patients_training}, \n validation patients {self.n_patients_validation}, \n testing patients {self.n_patients_testing}"
+        # )
+
+        # Get patient IDs for each
+        self.patient_ids = list(self.patient_index_to_n_slices_dict.keys())
+
+        ########## AD BY ANDREA: This patient has a problem with the masks : FileNotFoundError: [Errno 2] No such file or directory: '/store/LION/datasets/processed/LIDC-IDRI/LIDC-IDRI-0027/mask_75_nodule_0_annotation_306.npy'
+        # Remove corrupted patients
+        bad_patients = ["LIDC-IDRI-0027"]
+
+        self.patient_ids = [
+            patient for patient in self.patient_ids if patient not in bad_patients
+        ]
+
+        # removing the corrupted patient from the dictonaries
+        for dictionary in [
+            self.patient_index_to_n_slices_dict,
+            self.patient_index_to_slices_index_dict,
+            self.patient_index_to_nodule_slices_index_dict,
+            self.patient_index_to_non_nodule_slices_index_dict,
+        ]:
+            for patient in bad_patients:
+                dictionary.pop(patient, None)
+
+        # Update number of patients
+        self.total_patients = len(self.patient_ids)
         self.n_patients_training = math.floor(
-            self.training_proportion * (self.total_patients)
+            self.training_proportion * self.total_patients
         )
+
         self.n_patients_validation = math.floor(
-            self.validation_proportion * (self.total_patients)
+            self.validation_proportion * self.total_patients
         )
+
         self.n_patients_testing = (
             self.total_patients - self.n_patients_training - self.n_patients_validation
         )
@@ -272,8 +329,6 @@ class LIDC_IDRI(Dataset):
             f"Total patients: {self.total_patients}, \n training patients {self.n_patients_training}, \n validation patients {self.n_patients_validation}, \n testing patients {self.n_patients_testing}"
         )
 
-        # Get patient IDs for each
-        self.patient_ids = list(self.patient_index_to_n_slices_dict.keys())
         self.training_patients_list = self.patient_ids[: self.n_patients_training]
         self.validation_patients_list = self.patient_ids[
             self.n_patients_training : self.n_patients_training
@@ -306,6 +361,7 @@ class LIDC_IDRI(Dataset):
             self.patient_index_to_nodule_slices_index_dict,
             self.num_slices_per_patient,
             self.pcg_slices_nodule,
+            self.params.load_only_slices_with_nodules,
         )
         self.slice_index_to_patient_id_list = self.get_slice_index_to_patient_id_list(
             self.slices_to_load
@@ -327,6 +383,11 @@ class LIDC_IDRI(Dataset):
         )  # not used, but for metadata
         param.max_num_slices_per_patient = 5
         param.pcg_slices_nodule = 0.5
+
+        # If True, loads all available slices containing annotated nodules and ignores
+        # pcg_slices_nodule and max_num_slices_per_patient.
+        param.load_only_slices_with_nodules = False
+
         param.task = task
         param.folder = LIDC_IDRI_PROCESSED_DATASET_PATH
         if task == "reconstruction" and geometry is None:
@@ -348,6 +409,7 @@ class LIDC_IDRI(Dataset):
         nodule_slices_dict: Dict,
         num_slices_per_patient: int,
         pcg_slices_nodule: float,
+        load_only_slices_with_nodules: bool,
     ):
         """
         Returns a dictionary that contains patient_id's as keys and list of slices to load as values for each patient.
@@ -370,6 +432,11 @@ class LIDC_IDRI(Dataset):
             num_slices_per_patient = 1000
 
         for patient_id in patient_list:  # Loop over every patient
+            if load_only_slices_with_nodules:
+                patient_id_to_slices_to_load_dict[patient_id] = sorted(
+                    nodule_slices_dict[patient_id]
+                )
+                continue
             number_of_slices = min(
                 num_slices_per_patient,
                 min(
@@ -558,23 +625,47 @@ class LIDC_IDRI(Dataset):
             "end_to_end",
             "segmentation",
             "reconstruction",
+            "full",
         ]:
+
             reconstruction_tensor = self.get_reconstruction_tensor(file_path)
+            # if self.image_transform is not None:
+            #     reconstruction_tensor = self.image_transform(reconstruction_tensor)
+        if self.params.task in ["reconstruction", "full"]:
+            image_mu = reconstruction_tensor.clone()
+            if self.image_mu_transform is not None:
+                image_mu = self.image_mu_transform(image_mu)
+
+        if self.params.task in ["segmentation", "full"]:
+            image_normal = reconstruction_tensor.clone()
             if self.image_transform is not None:
-                reconstruction_tensor = self.image_transform(reconstruction_tensor)
+                image_normal = self.image_transform(image_normal)
 
         if self.params.task in ["joint", "end_to_end", "segmentation"]:
             mask_tensor = self.get_mask_tensor(patient_id, slice_index_to_load)
-            return reconstruction_tensor, mask_tensor
+            return image_normal, mask_tensor
 
         elif self.params.task == "reconstruction":
-            sinogram = self.compute_clean_sinogram(reconstruction_tensor.float())
+            sinogram = self.compute_clean_sinogram(image_mu.float())
 
             if self.sinogram_transform is not None:
                 sinogram = self.sinogram_transform(sinogram)
-            return sinogram, reconstruction_tensor
+            return sinogram, image_mu
 
         elif self.params.task == "diagnostic":
             return self.patients_diagnosis_dictionary[patient_id]
+
+        elif self.params.task == "full":
+            mask_tensor = self.get_mask_tensor(patient_id, slice_index_to_load)
+
+            sinogram = self.compute_clean_sinogram(image_mu.float())
+
+            if self.sinogram_transform is not None:
+                sinogram = self.sinogram_transform(sinogram)
+
+            diagnosis = self.patients_diagnosis_dictionary[patient_id]
+
+            return sinogram, mask_tensor, image_normal, diagnosis
+
         else:
             raise NotImplementedError

@@ -320,3 +320,33 @@ class clinicalCTRecon(Experiment):
         )
 
         return param
+
+
+class NormalDoseCTSegmentation(Experiment):
+    def __init__(self, experiment_params=None, dataset="LIDC-IDRI", datafolder=None):
+
+        super().__init__(experiment_params, dataset, datafolder)
+
+    @staticmethod
+    def default_parameters(dataset="LIDC-IDRI"):
+        param = LIONParameter()
+        param.name = "Normal Dose for segmentation porpuses experiments"
+        # Parameters for the geometry
+        param.geometry = ctgeo.Geometry.default_parameters()
+        # Parameters for the noise in the sinogram.
+        # Default, 10% of clinical dose.
+        param.noise_params = LIONParameter()
+        param.noise_params.I0 = 10000
+        param.noise_params.sigma = 5
+        param.noise_params.cross_talk = 0.05
+        param.data_loader_params = Experiment.get_dataset_parameters(
+            dataset, geometry=param.geometry
+        )
+
+        # Dataset configuration
+        param.data_loader_params.task = "full"
+        param.max_num_slices_per_patient = 1000
+        param.pcg_slices_nodule = 1
+        param.data_loader_params.load_only_slices_with_nodules = True
+
+        return param
